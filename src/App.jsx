@@ -1,5 +1,7 @@
+import { useEffect, useLayoutEffect } from "react"
 import { useState } from "react"
 import "./App.css"
+import Card from "./Components/Card.jsx"
 // import axios from "axios"
 
 /*
@@ -14,9 +16,14 @@ import "./App.css"
 // https://open.spotify.com/playlist/37i9dQZF1DXbbu94YBG7Ye
 
 function App() {
+  useEffect(() => {
+    handleSearch()
+  }, [])
+
   const [word, setWord] = useState("")
   const [songs, setSongs] = useState([])
   const [songsL, setSongsL] = useState([])
+  const [songsLCounter, setSongsLCounter] = useState(0)
 
   const searchSongs = async (id) => {
     const options = {
@@ -28,7 +35,7 @@ function App() {
     }
 
     const request = await fetch(
-      `https://spotify23.p.rapidapi.com/playlist_tracks/?id=${id}&offset=0&limit=3`,
+      `https://spotify23.p.rapidapi.com/playlist_tracks/?id=${id}&offset=0&limit=10`,
       options
     )
     const data = await request.json()
@@ -52,28 +59,33 @@ function App() {
   }
 
   const handleSearch = async () => {
+    console.log("Searching...")
+
     const songsList = await searchSongs("37i9dQZF1DXbbu94YBG7Ye")
     console.log("songs: ", songsList.items)
     setSongs(songsList.items)
     console.log("Songs set..")
 
     const fullSongList = []
-
-    for (const song of songs) {
+    console.log("before for")
+    for (const song of songsList.items) {
       const newLyric = await searchLyrics(song.track.id)
-      // console.log(newLyric.lyrics.lines)
+      console.log(newLyric.lyrics.lines)
       const fullSong = {
         id: song.track.id,
         artist: song.track.artists[0],
         songName: song.track.name,
         uri: song.track.uri,
         lyrics: newLyric.lyrics.lines,
+        image: song.track.album.images[0].url,
       }
       // console.log(fullSong)
       fullSongList.push(fullSong)
+      setSongsLCounter(songsLCounter + 1)
       // setSongsL(newLyric.lyrics.lines)
       // console.log(element);
     }
+    console.log("after for")
     // console.log(fullSongList)
     setSongsL(fullSongList)
 
@@ -86,9 +98,15 @@ function App() {
   }
 
   return (
-    <div className="App">
+    <div>
       <h1>Wordify</h1>
-      <h2> Word to search: </h2>
+      <h2> Playlist: Exitos Argentina </h2>
+
+      {songsLCounter.length < 10 ? (
+        <h2> Cargando... {(songsLCounter.length / 10) * 100}% </h2>
+      ) : (
+        <h3> Introduce una palabra:</h3>
+      )}
       <input
         onChange={(e) => {
           setWord(e.target.value)
@@ -96,34 +114,31 @@ function App() {
         value={word}
         type="text"
       ></input>
-      <h2> Playlist: Exitos Argentina </h2>
-      <button onClick={handleSearch}> Search songs! </button>
+      {/* <button onClick={handleSearch}> Search songs! </button> */}
       <ul>
         {!songsL ? (
           <p>Waiting..</p>
         ) : (
           songsL.map((song) => (
             <div key={song.id}>
-              <h3>
-                {song.artist.name} - {song.songName}
-              </h3>
-              <small> {song.id} </small>
-              {song.lyrics.map((line) =>
-                line.words.toLowerCase().includes(word.toLowerCase()) ? (
-                  <p> {line.words} </p>
-                ) : (
-                  <></>
+              {word.length < 3 ? (
+                <></>
+              ) : (
+                song.lyrics.map((line) =>
+                  line.words.toLowerCase().includes(word.toLowerCase()) ? (
+                    <Card
+                      text={line.words}
+                      name={song.songName}
+                      artist={song.artist.name}
+                      image={song.image}
+                    />
+                  ) : (
+                    <></>
+                  )
                 )
               )}
             </div>
           ))
-        )}
-      </ul>
-      <ul>
-        {!songsL ? (
-          <p>Waiting Lyric..</p>
-        ) : (
-          songsL.map((song) => <p> {song.words} </p>)
         )}
       </ul>
     </div>
