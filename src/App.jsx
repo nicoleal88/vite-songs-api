@@ -1,8 +1,7 @@
-import { useEffect, useLayoutEffect } from "react"
+import { useEffect } from "react"
 import { useState } from "react"
 import "./App.css"
 import Card from "./Components/Card.jsx"
-// import axios from "axios"
 
 /*
 1- Write a word
@@ -21,9 +20,7 @@ function App() {
   }, [])
 
   const [word, setWord] = useState("")
-  const [songs, setSongs] = useState([])
   const [songsL, setSongsL] = useState([])
-  const [songsLCounter, setSongsLCounter] = useState(0)
 
   const searchSongs = async (id) => {
     const options = {
@@ -33,13 +30,16 @@ function App() {
         "X-RapidAPI-Host": "spotify23.p.rapidapi.com",
       },
     }
-
-    const request = await fetch(
-      `https://spotify23.p.rapidapi.com/playlist_tracks/?id=${id}&offset=0&limit=10`,
-      options
-    )
-    const data = await request.json()
-    return data
+    try {
+      const request = await fetch(
+        `https://spotify23.p.rapidapi.com/playlist_tracks/?id=${id}&offset=0&limit=10`,
+        options
+      )
+      const data = await request.json()
+      return data
+    } catch (e) {
+      console.error(e)
+    }
   }
 
   const searchLyrics = async (id) => {
@@ -50,42 +50,49 @@ function App() {
         "X-RapidAPI-Host": "spotify81.p.rapidapi.com",
       },
     }
-    const request = await fetch(
-      `https://spotify81.p.rapidapi.com/track_lyrics?id=${id}`,
-      options
-    )
-    const data = await request.json()
-    return data
+    try {
+      const request = await fetch(
+        `https://spotify81.p.rapidapi.com/track_lyrics?id=${id}`,
+        options
+      )
+      const data = await request.json()
+      return data
+    } catch (e) {
+      console.error(e)
+    }
   }
 
   const handleSearch = async () => {
     console.log("Searching...")
 
     const songsList = await searchSongs("37i9dQZF1DXbbu94YBG7Ye")
-    console.log("songs: ", songsList.items)
-    setSongs(songsList.items)
-    console.log("Songs set..")
+    // console.log("songs: ", songsList.items)
+    // setSongs(songsList.items)
+    // console.log("Songs set..")
 
     const fullSongList = []
-    console.log("before for")
+    // console.log("before for")
     for (const song of songsList.items) {
-      const newLyric = await searchLyrics(song.track.id)
-      console.log(newLyric.lyrics.lines)
-      const fullSong = {
-        id: song.track.id,
-        artist: song.track.artists[0],
-        songName: song.track.name,
-        uri: song.track.uri,
-        lyrics: newLyric.lyrics.lines,
-        image: song.track.album.images[0].url,
+      try {
+        const newLyric = await searchLyrics(song.track.id)
+        // console.log(newLyric.lyrics.lines)
+        const fullSong = {
+          id: song.track.id,
+          artist: song.track.artists[0],
+          songName: song.track.name,
+          uri: song.track.uri,
+          lyrics: newLyric.lyrics.lines,
+          image: song.track.album.images[0].url,
+        }
+        // console.log(fullSong)
+        fullSongList.push(fullSong)
+        // setSongsL(newLyric.lyrics.lines)
+        // console.log(element);
+      } catch (e) {
+        console.error(e)
       }
-      // console.log(fullSong)
-      fullSongList.push(fullSong)
-      setSongsLCounter(songsLCounter + 1)
-      // setSongsL(newLyric.lyrics.lines)
-      // console.log(element);
     }
-    console.log("after for")
+    // console.log("after for")
     // console.log(fullSongList)
     setSongsL(fullSongList)
 
@@ -102,18 +109,21 @@ function App() {
       <h1>Wordify</h1>
       <h2> Playlist: Exitos Argentina </h2>
 
-      {songsLCounter.length < 10 ? (
-        <h2> Cargando... {(songsLCounter.length / 10) * 100}% </h2>
+      {songsL.length === 0 ? (
+        <h2> Cargando...</h2>
       ) : (
-        <h3> Introduce una palabra:</h3>
+        <>
+          <h3> Introduce una palabra:</h3>
+          <input
+            style={{ width: 400 }}
+            onChange={(e) => {
+              setWord(e.target.value)
+            }}
+            value={word}
+            type="text"
+          ></input>
+        </>
       )}
-      <input
-        onChange={(e) => {
-          setWord(e.target.value)
-        }}
-        value={word}
-        type="text"
-      ></input>
       {/* <button onClick={handleSearch}> Search songs! </button> */}
       <ul>
         {!songsL ? (
@@ -146,23 +156,3 @@ function App() {
 }
 
 export default App
-
-// const options = {
-//   method: "GET",
-//   url: "https://spotify23.p.rapidapi.com/playlist_tracks/",
-//   params: { id: "37i9dQZF1DXbbu94YBG7Ye", offset: "0", limit: "2" },
-//   headers: {
-//     "X-RapidAPI-Key": "a8cbdb0779msh01d7bc6b433025cp1e280ejsna3119419cc46",
-//     "X-RapidAPI-Host": "spotify23.p.rapidapi.com",
-//   },
-// }
-// axios
-//   .request(options)
-//   .then((response) => {
-//     setSongs(response.data.items)
-//     // console.log(response.data.items)
-//     // return response.data.items
-//   })
-//   .catch((error) => {
-//     console.error(error)
-//   })
